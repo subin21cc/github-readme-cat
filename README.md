@@ -71,6 +71,7 @@ jobs:
 |---|---|---|
 | `coats` | `orange` | Comma-separated cats, up to 3. See [Make it your cat](#make-it-your-cat) |
 | `width` | `720` | Width of the lane all cats share (at least 224 px per cat, so standing cats never overlap) |
+| `pace` | `1` | Leg speed multiplier. Use above `1` (e.g. `3`) to slow the legs when you show the image smaller than its width |
 | `days` | `7` | How many recent days of contributions to count |
 | `username` | repo owner | Whose contributions drive the cats |
 | `output_dir` | `github-readme-cat` | Where `cat-light.svg` and `cat-dark.svg` are written |
