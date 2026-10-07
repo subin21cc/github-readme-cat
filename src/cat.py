@@ -6,7 +6,7 @@ Pure CSS animation, no JavaScript, so it renders inside GitHub's <img> sandbox.
 import argparse
 
 S = 8                  # size of one pixel (px)
-W, H = 28, 18          # cat sprite grid
+W, H = 26, 18          # cat sprite grid
 CAT_W = W * S
 OUTLINE = "#2b2b2b"
 IDLE_GAP = 16           # space between standing cats (px)
@@ -120,7 +120,7 @@ def recolor(r, c, ch, pattern, part):
         if part == "body" and c <= 10:      # head: one patch of each color
             ch = "O" if c <= 4 and r <= 5 else "D" if c >= 6 and r <= 4 else "W"
         elif part == "body":
-            ch = "D" if c <= 15 else "O"
+            ch = "D" if c <= 13 else "O"
         else:
             ch = "O"
     elif pattern == "siamese":
@@ -148,13 +148,13 @@ BODY = [
     "KOOODODOOOK",
     "KOOOOOOOOOK",
     "KOOOOOOOOOK",
-    "KOEHOOOEHOKKKKKKKKKKKK",
-    "KOEEOOOEEOKOODOODOODOK",
-    "KWWOOPOOWWKOODOODOODOK",
-    ".KWWWKWWWKOOOOOOOOOOOK",
-    "..KWWWWWWOOOOOOOOOOOOK",
-    "..KWWWWWOOOOOOOOOOOOOK",
-    "..KWWWWWWWWWWWWWWWWOOK",
+    "KOEHOOOEHOKKKKKKKKKK",
+    "KOEEOOOEEOKOODOODOOK",
+    "KWWOOPOOWWKOODOODOOK",
+    ".KWWWKWWWKOOOOOOOOOK",
+    "..KWWWWWWOOOOOOOOOOK",
+    "..KWWWWWOOOOOOOOOOOK",
+    "..KWWWWWWWWWWWWWWOOK",
 ]
 BLINK = [""] * 6 + ["KOOOOOOOOOK", "KOKKOOOKKOK"]
 FOLD_EARS = ["", "..KKK.KKK.."]
@@ -175,12 +175,14 @@ def body_empty(r, c):
     return r >= len(BODY) or c >= len(BODY[r]) or BODY[r][c] == "."
 
 
-def sprite(fill, outline_if=lambda r, c: True):
+def sprite(fill, outline_if=lambda r, c: True, diagonal=True):
     """Wrap a {(row, col): color} fill with an outline."""
     out = {}
     for (r, c) in fill:
         for dr in (-1, 0, 1):
             for dc in (-1, 0, 1):
+                if not diagonal and dr and dc:
+                    continue
                 p = (r + dr, c + dc)
                 if p not in fill and outline_if(*p):
                     out[p] = "K"
@@ -188,77 +190,71 @@ def sprite(fill, outline_if=lambda r, c: True):
     return out
 
 
-# Legs: 4-beat lateral-sequence walk, 8 frames.
+# Legs: 4-beat lateral-sequence walk, 8 frames. Thin legs with a long stride.
 # A pose is a horizontal offset per row (negative = forward).
 # 5 rows = paw on the ground, 4 rows = paw lifted.
 LEG_TOP = 12
+LEG_W = [2, 2, 1, 1, 1]   # leg thickness per row: thicker at the top, slim lower leg
 STAND = [0] * 5
 FRONT_CYCLE = [
-    [0, 0, -1, -1, -2],   # reach and plant
-    [0, 0, 0, -1, -1],
+    [0, -1, -1, -2, -2],  # reach and plant
+    [0, 0, -1, -1, -1],
     [0, 0, 0, 0, 0],      # under the body
-    [0, 0, 0, 1, 1],
-    [0, 0, 1, 1, 2],      # push off
-    [0, 0, 1, 2],         # wrist folds, paw lifts
-    [0, 0, 0, 0],         # swing forward
-    [0, 0, -1, -1],
+    [0, 0, 1, 1, 1],
+    [0, 1, 1, 2, 3],      # push off
+    [0, 1, 2, 1],         # wrist folds, paw lifts
+    [0, 0, 0, -1],        # swing forward
+    [0, -1, -1, -2],
 ]
 HIND_CYCLE = [
-    [0, 0, 0, -1, -1],
-    [0, 0, 0, 0, -1],
+    [0, -1, -1, -2, -2],
+    [0, 0, -1, -1, -1],
     [0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 1],
-    [0, 0, 1, 1, 2],      # push off
-    [0, 1, 2, 2],         # toe flick, hock bends
-    [0, 0, 1, 0],
-    [0, 0, 0, -1],
+    [0, 1, 1, 1, 2],
+    [0, 1, 2, 2, 3],      # push off
+    [0, 1, 2, 3],         # toe flick
+    [0, 1, 1, 0],         # hock bends
+    [0, 0, -1, -1],
 ]
 LEGS = [  # (x, leg color, paw color, far side, cycle, phase)
     (3, "W", "W", False, FRONT_CYCLE, 2),
-    (6, "w", "w", True, FRONT_CYCLE, 6),
-    (16, "o", "w", True, HIND_CYCLE, 4),
-    (19, "O", "W", False, HIND_CYCLE, 0),
+    (7, "w", "w", True, FRONT_CYCLE, 6),
+    (13, "o", "w", True, HIND_CYCLE, 4),
+    (17, "O", "W", False, HIND_CYCLE, 0),
 ]
 GAIT = [[cyc[(f - ph) % 8] for (*_, cyc, ph) in LEGS] for f in range(8)]
 
 
 def leg_frame(offsets):
-    px = {(LEG_TOP + 1, c): "K" for c in range(2, 22)}  # belly line, legs cover it
+    px = {(LEG_TOP + 1, c): "K" for c in range(2, 20)}  # belly line, legs cover it
     for i in sorted(range(4), key=lambda i: not LEGS[i][3]):  # far legs first
         x, col, paw = LEGS[i][:3]
+        last = len(offsets[i]) - 1
         fill = {}
         for k, off in enumerate(offsets[i]):
-            for dx in (0, 1):
-                fill[(LEG_TOP + k, x + off + dx)] = paw if k == len(offsets[i]) - 1 else col
-        px.update(sprite(fill, lambda r, c: r > LEG_TOP))
+            for dx in range(LEG_W[k]):
+                if k and off != offsets[i][k - 1]:   # bridge the step so the leg stays connected
+                    fill[(LEG_TOP + k, x + offsets[i][k - 1] + dx)] = col
+                fill[(LEG_TOP + k, x + off + dx)] = paw if k == last else col
+        px.update(sprite(fill, lambda r, c: r > LEG_TOP, diagonal=False))
     return px
 
 
-# Tail: the whole tail bends from the root.
-def tail_frame(cols, short=False):
+# Tail: a thin tail rising from the rump, swaying and curling at the tip.
+TAIL_SHAPES = {  # (row, col) of each tail pixel, tip first; the root (6, 19) joins the body
+    "back":  [(0, 22), (1, 22), (2, 21), (3, 21), (4, 20), (5, 20), (6, 19)],
+    "hook":  [(0, 20), (0, 21), (1, 22), (2, 22), (3, 21), (4, 21), (5, 20), (6, 19)],
+    "front": [(0, 19), (1, 19), (2, 20), (3, 20), (4, 20), (5, 20), (6, 19)],
+    "curl":  [(0, 24), (1, 23), (2, 22), (3, 22), (4, 21), (5, 20), (6, 19)],
+}
+TAIL_PATHS = [TAIL_SHAPES[k] for k in ("back", "hook", "front", "hook", "back", "curl")]
+
+
+def tail_frame(cells, short=False):
     if short:
-        cols = cols[-3:]
-    top = 7 - len(cols)
-    fill = {(7, 21): "O", (7, 22): "O", (7, 23): "O"}
-    for k, c in enumerate(cols):
-        r = top + k
-        fill[(r, c)] = "D" if r in (3, 5) else "O"
-        nxt = cols[k + 1] if k + 1 < len(cols) else 23
-        if nxt != c:
-            fill[(r, nxt)] = "O"
+        cells = [(r, c) for r, c in cells if r >= 4]
+    fill = {(r, c): "D" if r in (2, 4) else "O" for r, c in cells}
     return sprite(fill, body_empty)
-
-
-TAIL_PATHS = [
-    [23, 23, 23, 23, 23, 23],
-    [24, 24, 24, 23, 23, 23],
-    [25, 25, 24, 24, 23, 23],
-    [24, 24, 24, 23, 23, 23],
-    [23, 23, 23, 23, 23, 23],
-    [22, 22, 22, 23, 23, 23],
-    [21, 21, 22, 22, 23, 23],
-    [22, 22, 22, 23, 23, 23],
-]
 
 
 def grid(rows):
@@ -339,7 +335,7 @@ def build(cats, contributions, width, theme):
 .l{{animation:fl {step or 1}s steps(1) infinite}}
 .blink{{animation:blink 4s steps(1) infinite}}
 .bob{{animation:bob {(step or 2.4) / 2:g}s steps(1) infinite}}
-@keyframes ft{{0%{{opacity:1}}12.5%{{opacity:0}}}}
+@keyframes ft{{0%{{opacity:1}}{100 / len(TAIL_PATHS):g}%{{opacity:0}}}}
 @keyframes fl{{0%{{opacity:1}}12.5%{{opacity:0}}}}
 @keyframes blink{{0%{{opacity:0}}92%{{opacity:1}}97%{{opacity:0}}}}
 @keyframes bob{{0%{{transform:translateY(0)}}50%{{transform:translateY(1px)}}}}

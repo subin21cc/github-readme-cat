@@ -19,7 +19,7 @@ inputs:
     required: false
     default: orange
   width:
-    description: Width of the lane all cats share, in pixels (at least 240 per cat).
+    description: Width of the lane all cats share, in pixels (at least 224 per cat).
     required: false
     default: "720"
   days:
