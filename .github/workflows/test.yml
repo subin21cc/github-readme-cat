@@ -1,0 +1,42 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Render every coat, mood and theme
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          for coat in orange black tabby gray white tuxedo calico siamese; do
+            for n in 0 5 20; do
+              for theme in light dark; do
+                python3 src/cat.py --coats "$coat" --contributions "$n" --theme "$theme" \
+                  --out "out/$coat-$n-$theme.svg"
+              done
+            done
+          done
+          python3 src/cat.py --coats orange,black,tabby --contributions 0 --out out/many.svg
+          python3 src/cat.py --coats "calico ears=fold collar=red,siamese eyes=blue/amber tail=short,fur=#c08552 belly=cream" --out out/custom.svg
+          for bad in "pattern=spots" "eyes=#12" "hat=red" "lion"; do
+            if python3 src/cat.py --coats "$bad" --out out/bad.svg; then
+              echo "'$bad' should fail"; exit 1
+            fi
+          done
+          if python3 src/cat.py --coats orange,black,tabby,gray --out out/four.svg; then
+            echo "more than 3 cats should fail"; exit 1
+          fi
+          if python3 src/cat.py --coats nope --out out/bad.svg; then
+            echo "unknown coat should fail"; exit 1
+          fi
+      - name: Run the action against this repo's owner
+        uses: ./
+        with:
+          coats: orange,tabby
+          output_dir: out/action
+      - run: ls -l out/action

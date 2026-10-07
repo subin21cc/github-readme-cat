@@ -1,0 +1,71 @@
+name: GitHub README Cat
+description: Pixel-art cats that walk across your GitHub profile README, and move faster the more you contribute.
+author: subin21cc
+branding:
+  icon: github
+  color: orange
+
+inputs:
+  github_token:
+    description: Token used to read your contribution count.
+    required: false
+    default: ${{ github.token }}
+  username:
+    description: GitHub user whose contributions drive the cats.
+    required: false
+    default: ${{ github.repository_owner }}
+  coats:
+    description: "Comma-separated cats (up to 3). Each is a preset (orange, black, tabby, gray, white, tuxedo, calico, siamese) and/or options such as 'ears=fold collar=red'. See README."
+    required: false
+    default: orange
+  width:
+    description: Width of the lane all cats share, in pixels (at least 240 per cat).
+    required: false
+    default: "720"
+  days:
+    description: How many recent days of contributions to count.
+    required: false
+    default: "7"
+  output_dir:
+    description: Folder to write cat-light.svg and cat-dark.svg into.
+    required: false
+    default: github-readme-cat
+
+outputs:
+  contributions:
+    description: Contributions counted in the period.
+    value: ${{ steps.count.outputs.contributions }}
+
+runs:
+  using: composite
+  steps:
+    - id: count
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        USERNAME: ${{ inputs.username }}
+        DAYS: ${{ inputs.days }}
+      run: |
+        set -euo pipefail
+        FROM=$(date -u -d "-${DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
+        COUNT=$(gh api graphql \
+          -f query='query($u:String!,$f:DateTime!){user(login:$u){contributionsCollection(from:$f){contributionCalendar{totalContributions}}}}' \
+          -f u="$USERNAME" -f f="$FROM" \
+          --jq '.data.user.contributionsCollection.contributionCalendar.totalContributions')
+        echo "contributions in the last ${DAYS} days: ${COUNT}"
+        echo "contributions=${COUNT}" >> "$GITHUB_OUTPUT"
+
+    - shell: bash
+      env:
+        COATS: ${{ inputs.coats }}
+        WIDTH: ${{ inputs.width }}
+        OUT: ${{ inputs.output_dir }}
+        COUNT: ${{ steps.count.outputs.contributions }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$OUT"
+        for theme in light dark; do
+          python3 "$GITHUB_ACTION_PATH/src/cat.py" \
+            --coats "$COATS" --width "$WIDTH" --contributions "$COUNT" \
+            --theme "$theme" --out "$OUT/cat-$theme.svg"
+        done
