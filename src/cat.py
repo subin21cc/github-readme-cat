@@ -327,7 +327,7 @@ def build(cats, contributions, width, theme):
         halo = (f".cat{{filter:drop-shadow(1px 0 0 {c}) drop-shadow(-1px 0 0 {c}) "
                 f"drop-shadow(0 1px 0 {c}) drop-shadow(0 -1px 0 {c})}}")
     drawn = "".join(cat_svg(c, mood, width, i, len(cats)) for i, c in enumerate(cats))
-    height = H * S + 4
+    height = (H + 1) * S + 4  # one spare row on top for the tail tip outline
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" shape-rendering="crispEdges">
 <title>pixel cat ({mood}, {contributions} contributions)</title>
 <style>
@@ -355,7 +355,7 @@ def build(cats, contributions, width, theme):
 }}
 {halo}
 </style>
-<g transform="translate(0,2)">{drawn}</g>
+<g transform="translate(0,{S + 2})">{drawn}</g>
 </svg>
 '''
 
