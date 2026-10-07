@@ -172,7 +172,7 @@ def body_px(cat):
 
 
 def body_empty(r, c):
-    return r >= len(BODY) or c >= len(BODY[r]) or BODY[r][c] == "."
+    return r < 0 or r >= len(BODY) or c >= len(BODY[r]) or BODY[r][c] == "."
 
 
 def sprite(fill, outline_if=lambda r, c: True, diagonal=True):
