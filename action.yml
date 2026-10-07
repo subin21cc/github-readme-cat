@@ -22,6 +22,10 @@ inputs:
     description: Width of the lane all cats share, in pixels (at least 224 per cat).
     required: false
     default: "720"
+  pace:
+    description: Leg speed multiplier. Above 1 slows the legs down, e.g. when the image is shown smaller than its width.
+    required: false
+    default: "1"
   days:
     description: How many recent days of contributions to count.
     required: false
@@ -59,6 +63,7 @@ runs:
       env:
         COATS: ${{ inputs.coats }}
         WIDTH: ${{ inputs.width }}
+        PACE: ${{ inputs.pace }}
         OUT: ${{ inputs.output_dir }}
         COUNT: ${{ steps.count.outputs.contributions }}
       run: |
@@ -66,6 +71,6 @@ runs:
         mkdir -p "$OUT"
         for theme in light dark; do
           python3 "$GITHUB_ACTION_PATH/src/cat.py" \
-            --coats "$COATS" --width "$WIDTH" --contributions "$COUNT" \
+            --coats "$COATS" --width "$WIDTH" --pace "$PACE" --contributions "$COUNT" \
             --theme "$theme" --out "$OUT/cat-$theme.svg"
         done

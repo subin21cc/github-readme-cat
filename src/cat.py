@@ -278,9 +278,10 @@ def frames(cls, items, sec, pal, offset=0.0):
     )
 
 
-def cat_svg(cat, mood, width, index, count):
+def cat_svg(cat, mood, width, index, count, pace=1.0):
     pal = palette(cat)
     step, speed = MOODS[mood]
+    step *= pace  # pace > 1 slows the legs down without changing the walking speed
     tail_sec = 2 if mood != "idle" else 3
     offset = index * 0.37  # so several cats don't move in lockstep
 
@@ -317,16 +318,16 @@ def min_width(count):
     return count * (CAT_W + IDLE_GAP)
 
 
-def build(cats, contributions, width, theme):
+def build(cats, contributions, width, theme, pace=1.0):
     mood = mood_for(contributions)
-    step, _ = MOODS[mood]
+    step = MOODS[mood][0] * pace
     far = width - CAT_W
     halo = ""
     if theme == "dark":
         c = "#d0d0d0"
         halo = (f".cat{{filter:drop-shadow(1px 0 0 {c}) drop-shadow(-1px 0 0 {c}) "
                 f"drop-shadow(0 1px 0 {c}) drop-shadow(0 -1px 0 {c})}}")
-    drawn = "".join(cat_svg(c, mood, width, i, len(cats)) for i, c in enumerate(cats))
+    drawn = "".join(cat_svg(c, mood, width, i, len(cats), pace) for i, c in enumerate(cats))
     height = (H + 1) * S + 4  # one spare row on top for the tail tip outline
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" shape-rendering="crispEdges">
 <title>pixel cat ({mood}, {contributions} contributions)</title>
@@ -368,6 +369,8 @@ def main():
     ap.add_argument("--contributions", type=int, default=5,
                     help="recent contributions: 0 = idle, 1-9 = walk, 10+ = run")
     ap.add_argument("--width", type=int, default=DEFAULT_WIDTH, help="lane width in px")
+    ap.add_argument("--pace", type=float, default=1.0,
+                    help="leg speed multiplier; 2 makes each step take twice as long")
     ap.add_argument("--theme", choices=["light", "dark"], default="light")
     ap.add_argument("--out", default="cat.svg")
     a = ap.parse_args()
@@ -381,10 +384,12 @@ def main():
         cats = [parse_cat(spec) for spec in specs]
     except ValueError as e:
         ap.error(str(e))
+    if a.pace <= 0:
+        ap.error("--pace must be greater than 0")
     if a.width < min_width(len(cats)):
         ap.error(f"--width must be at least {min_width(len(cats))} for {len(cats)} cat(s)")
     with open(a.out, "w") as f:
-        f.write(build(cats, a.contributions, a.width, a.theme))
+        f.write(build(cats, a.contributions, a.width, a.theme, a.pace))
     print(f"wrote {a.out} ({mood_for(a.contributions)}, {len(cats)} cat(s))")
 
 
