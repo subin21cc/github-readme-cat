@@ -281,7 +281,7 @@ def frames(cls, items, sec, pal, offset=0.0):
 def cat_svg(cat, mood, width, index, count, pace=1.0):
     pal = palette(cat)
     step, speed = MOODS[mood]
-    step *= pace  # pace > 1 slows the legs down without changing the walking speed
+    step = step and step * pace  # pace > 1 slows the legs down without changing the walking speed
     tail_sec = 2 if mood != "idle" else 3
     offset = index * 0.37  # so several cats don't move in lockstep
 
@@ -320,7 +320,7 @@ def min_width(count):
 
 def build(cats, contributions, width, theme, pace=1.0):
     mood = mood_for(contributions)
-    step = MOODS[mood][0] * pace
+    step = MOODS[mood][0] and MOODS[mood][0] * pace
     far = width - CAT_W
     halo = ""
     if theme == "dark":
