@@ -59,10 +59,12 @@ jobs:
 3. Run it once from the **Actions** tab (`Run workflow`), then put this in your `README.md`:
 
 ```html
+<a href="https://github.com/subin21cc/github-readme-cat">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./github-readme-cat/cat-dark.svg">
   <img alt="pixel cat" src="./github-readme-cat/cat-light.svg">
 </picture>
+</a>
 ```
 
 ## Options

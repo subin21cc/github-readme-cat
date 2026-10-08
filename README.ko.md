@@ -59,10 +59,12 @@ jobs:
 3. **Actions** 탭에서 `Run workflow`로 한 번 실행한 뒤, `README.md`에 아래를 넣습니다:
 
 ```html
+<a href="https://github.com/subin21cc/github-readme-cat">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./github-readme-cat/cat-dark.svg">
   <img alt="pixel cat" src="./github-readme-cat/cat-light.svg">
 </picture>
+</a>
 ```
 
 ## 옵션
